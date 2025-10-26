@@ -45,6 +45,7 @@
 #     print(response)
 
 import os
+from dotenv import load_dotenv
 from langchain_ollama import ChatOllama
 from langchain_chroma import Chroma
 from langchain_ollama import OllamaEmbeddings
@@ -52,12 +53,23 @@ from langchain.tools import tool
 from langchain.agents import create_agent
 # from langchain_ollama.chat_models import ChatOllama
 
+# Load environment variables
+load_dotenv()
+
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1")
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434")
 CHROMA_URL = os.getenv("CHROMA_URL", "http://chroma:8000")
+# CHROMA_PATH = os.getenv("CHROMA_PATH", "./chroma_data")
+# CHROMA_COLLECTION = os.getenv("CHROMA_COLLECTION", "agent_memory")
 
 # Setup LLM
-llm = ChatOllama(model="llama3", base_url=OLLAMA_URL)
-embeddings = OllamaEmbeddings(model="nomic-embed-text", base_url=OLLAMA_URL)
+llm = ChatOllama(
+    model=OLLAMA_MODEL,
+    temperature=0,
+    base_url=OLLAMA_URL
+)
+
+embeddings = OllamaEmbeddings(model=OLLAMA_MODEL, base_url=OLLAMA_URL)
 
 # Setup Chroma
 db = Chroma(persist_directory="/workspace/db", embedding_function=embeddings)
