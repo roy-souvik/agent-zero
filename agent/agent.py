@@ -59,20 +59,16 @@ load_dotenv()
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1")
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434")
 CHROMA_URL = os.getenv("CHROMA_URL", "http://chroma:8000")
-# CHROMA_PATH = os.getenv("CHROMA_PATH", "./chroma_data")
+CHROMA_PATH = os.getenv("CHROMA_PATH", "/workspace/db")
 # CHROMA_COLLECTION = os.getenv("CHROMA_COLLECTION", "agent_memory")
 
 # Setup LLM
-llm = ChatOllama(
-    model=OLLAMA_MODEL,
-    temperature=0,
-    base_url=OLLAMA_URL
-)
+llm = ChatOllama(model=OLLAMA_MODEL, base_url=OLLAMA_URL)
 
 embeddings = OllamaEmbeddings(model=OLLAMA_MODEL, base_url=OLLAMA_URL)
 
 # Setup Chroma
-db = Chroma(persist_directory="/workspace/db", embedding_function=embeddings)
+db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embeddings)
 
 @tool
 def add_doc(text: str):

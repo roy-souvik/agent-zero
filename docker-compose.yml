@@ -21,7 +21,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - chroma_data:/chroma
+      - vector_db:/chroma
 
   agent:
     build: ./agent
@@ -32,11 +32,11 @@ services:
       - ollama
       - chroma
     ports:
-      - "8501:8501"  # Streamlit UI
+      - "8501:8501" # Streamlit UI
     working_dir: /workspace
     volumes:
       - ./agent:/workspace
 
 volumes:
   ollama_data:
-  chroma_data:
+  vector_db:
