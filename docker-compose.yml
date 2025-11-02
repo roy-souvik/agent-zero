@@ -27,7 +27,7 @@ services:
     build:
       context: ./agent
       dockerfile: Dockerfile
-    container_name: langchain-agent
+    container_name: agent
     env_file:
       - .env
     depends_on:
