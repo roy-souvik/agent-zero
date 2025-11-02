@@ -19,7 +19,6 @@ CHROMA_DIR = os.getenv("CHROMA_DIR", "/chroma")
 embeddings = OllamaEmbeddings(model=OLLAMA_MODEL, base_url=OLLAMA_URL)
 llm = ChatOllama(model=OLLAMA_MODEL, base_url=OLLAMA_URL)
 
-
 def init_vector_store():
     client = chromadb.HttpClient(
         host=CHROMA_HOST,
@@ -31,7 +30,6 @@ def init_vector_store():
         embedding_function=embeddings,
         client=client,
     )
-
 
 def add_document(text: str):
     """Add text/document to Chroma DB."""
