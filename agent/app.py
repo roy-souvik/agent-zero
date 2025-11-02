@@ -1,6 +1,6 @@
 import streamlit as st
 from dotenv import load_dotenv
-from pages import rag_qa, chat_agent, settings
+from pages import rag_qa, chat_agent, settings, webcam_login
 
 load_dotenv()
 
@@ -15,14 +15,16 @@ st.set_page_config(
 st.sidebar.title("🧭 Navigation")
 page = st.sidebar.radio(
     "Go to",
-    ["RAG Q&A", "Chat Agent", "Settings"]
+    ["Webcam Login", "RAG Q&A", "Chat Agent", "Settings"]
 )
 
 st.sidebar.divider()
 st.sidebar.info("💡 Select a page from above to get started")
 
 # Route to appropriate page
-if page == "RAG Q&A":
+if page == "Webcam Login":
+    webcam_login.show()
+elif page == "RAG Q&A":
     rag_qa.show()
 elif page == "Chat Agent":
     chat_agent.show()
