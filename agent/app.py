@@ -14,10 +14,6 @@ st.set_page_config(
 
 # Sidebar navigation
 st.sidebar.title("🧭 Navigation")
-# page = st.sidebar.radio(
-#     "Go to",
-#     ["RAG Q&A", "Chat Agent", "Settings"]
-# )
 
 navigation_links = ["RAG Q&A", "Dashboard", "Incident Analysis", "Reports", "Settings"]
 

@@ -14,4 +14,14 @@ acp-sdk>=0.8.0
 requests>=2.31
 pydantic>=2.5
 crewai>=0.7.0
+crewai-tools
 requests>=2.32
+httpx
+
+# Data Collection Dependencies
+psutil  # System metrics
+boto3  # AWS
+google-cloud-logging  # GCP
+psycopg2-binary  # PostgreSQL
+pymongo  # MongoDB
+datadog  # Datadog APM
