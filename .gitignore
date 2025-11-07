@@ -2,3 +2,6 @@
 /agent/__pycache__
 /agent/db
 .env
+/agent/database/data
+/agent/database/__*
+/agent/database/**/__*

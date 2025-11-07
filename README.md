@@ -24,3 +24,5 @@ A modular AI Agent environment combining **LangChain**, **Ollama**, **ChromaDB**
 git clone https://github.com/roy-souvik/agent-zero.git
 cd agent-zero
 cp .env.example .env
+
+Run `python main.py` to migrate and seed.
