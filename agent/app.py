@@ -7,14 +7,20 @@ from pages import (
     reports_alerts,
     settings,
     workflow_visual,
+    login,
 )
 
 load_dotenv()
-st.set_page_config(page_title="Incident Management AI", page_icon="🚨", layout="wide")
+st.set_page_config(page_title="Incident IQ", page_icon="🚨", layout="wide")
 
 if 'user_logged_in' not in st.session_state:
     st.session_state.user_logged_in = False
     st.session_state.username = None
+
+# if not logged in, show login page only
+if not st.session_state.user_logged_in:
+    login.show()
+    st.stop()
 
 # Top user info (kept minimal)
 col1, col2 = st.columns([6, 1])
@@ -29,7 +35,6 @@ with col2:
     </div>
     """, unsafe_allow_html=True)
 
-# pages array (for st.navigation UI)
 pages = [
     st.Page("pages/dashboard.py", title="Dashboard", icon="📊"),
     st.Page("pages/incident_analysis_crew.py", title="Analyze Incident", icon="🔍"),
@@ -43,7 +48,7 @@ with st.sidebar:
     st.markdown("<h1 style='font-size:20px'>Incident IQ</h1>", unsafe_allow_html=True)
     st.divider()
 
-page = st.navigation(pages)          # returns selected Page object
+page = st.navigation(pages)
 title = getattr(page, "title", "Dashboard")
 
 # Route by title and call each module's .show()

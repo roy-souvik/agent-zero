@@ -2,17 +2,16 @@ import streamlit as st
 import time
 
 def show():
-    st.set_page_config(layout="wide")
     st.title("⚙️ Cloud AI Agent Workflow")
 
     st.markdown("""
     <style>
     .flow {
         display: flex; justify-content: center; align-items: center;
-        gap: 60px; margin-top: 60px; flex-wrap: nowrap; overflow-x: auto;
+        gap: 20px; margin-top: 60px; flex-wrap: nowrap; overflow-x: auto;
     }
     .box {
-        width: 260px; height: 200px; border-radius: 15px;
+        width: 250px; height: 200px; border-radius: 15px;
         background: linear-gradient(145deg,#1f2937,#111827);
         color: white; text-align: center;
         display: flex; flex-direction: row; justify-content: center;
