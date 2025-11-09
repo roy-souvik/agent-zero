@@ -5,11 +5,11 @@ def show():
     st.set_page_config(page_title="Login | Incident IQ", page_icon="🔐", layout="centered")
     st.title("🔐 Login to Incident IQ")
 
-    email = st.text_input("Email")
-    password = st.text_input("Password", type="password")
+    email = st.text_input("Email", value="root@example.com")
+    password = st.text_input("Password", type="password", value="5012f5182061c46e57859cf617128c6f70eddfba4db27772bdede5a039fa7085")
 
     if st.button("Login"):
-        conn = sqlite3.connect("users.db")
+        conn = sqlite3.connect("incident_iq.db")
         cur = conn.cursor()
         cur.execute("SELECT id, name FROM users WHERE email=? AND password=?", (email, password))
         user = cur.fetchone()
