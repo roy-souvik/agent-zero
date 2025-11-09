@@ -8,6 +8,7 @@ from pages import (
     settings,
     workflow_visual,
     login,
+    admin_approvals,
 )
 
 load_dotenv()
@@ -40,6 +41,7 @@ pages = [
     st.Page("pages/incident_analysis_crew.py", title="Analyze Incident", icon="🔍"),
     st.Page("pages/reports_incidents.py", title="Incidents Report", icon="📋"),
     st.Page("pages/reports_alerts.py", title="Alerts Report", icon="🔔"),
+    st.Page("pages/admin_approvals.py", title="Approve Suggestions", icon="🔔"),
     st.Page("pages/workflow_visual.py", title="Workflow Visualization", icon="🧩"),
     st.Page("pages/settings.py", title="Settings", icon="⚙️"),
 ]
@@ -58,6 +60,8 @@ elif title == "Analyze Incident":
     incident_analysis_crew.show()
 elif title == "Incidents Report":
     reports_incidents.show()
+elif title == "Approve Suggestions":
+    admin_approvals.show()
 elif title == "Alerts Report":
     reports_alerts.show()
 elif title == "Workflow Visualization":
