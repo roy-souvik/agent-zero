@@ -1,0 +1,15 @@
+rules:
+  - name: check_input_for_profanity
+    description: block bad language
+    conditions:
+      - "{{ 'fuck' in $user_input.lower() }}"
+    actions:
+      - "respond '⚠️ please use polite language.'"
+      - "stop"
+
+  - name: ensure_respectful_response
+    description: enforce polite LLM output
+    conditions:
+      - "{{ 'idiot' in $llm_output.lower() }}"
+    actions:
+      - "replace $llm_output with '⚠️ output contained inappropriate language, sanitized.'"
