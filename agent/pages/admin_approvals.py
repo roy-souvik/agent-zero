@@ -1,31 +1,59 @@
 import streamlit as st
 import pandas as pd
+import sqlite3
 from datetime import datetime
-import random
+from database.db.connection import get_connection
+from database.models.classifier_output import ClassifierOutputsModel
 
-@st.cache_data
 def get_pending_data():
-    data = []
-    for i in range(15):
-        data.append({
-            "ID": i + 1,
-            "Payload_ID": f"PLD-{1000 + i}",
-            "Environment": random.choice(["production", "staging", "dev"]),
-            "Severity": random.choice(["Critical", "High", "Medium", "Low"]),
-            "Model_Score": round(random.uniform(0.65, 0.95), 2),
-            "Rule_Score": round(random.uniform(0.60, 0.90), 2),
-            "Combined_Score": round(random.uniform(0.62, 0.92), 2),
-            "Source": random.choice(["API", "Database", "Network"]),
-            "Corrective_Action": random.choice(["Restart service", "Scale resources", "Check connections"])
-        })
-    return pd.DataFrame(data)
+    conn = get_connection()
+    classifier_output = ClassifierOutputsModel(conn)
+    data = classifier_output.find_unprocessed()
+    # df = pd.read_sql_query(query, conn)
+    conn.close()
+    return df
 
+def get_approved_data():
+    conn = get_connection()
+    query = """
+        SELECT payload_id, severity_id AS Original_Severity,
+               approved_severity AS Approved_Severity,
+               approved_by AS Approved_By,
+               approved_ts AS Approved_At,
+               approved_corrective_action AS Approved_Action
+        FROM classifier_outputs
+        WHERE approved_severity IS NOT NULL
+        ORDER BY approved_ts DESC
+    """
+    df = pd.read_sql_query(query, conn)
+    conn.close()
+    return df
+
+def update_approval(record_id, final_severity, notes, approver):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        UPDATE classifier_outputs
+        SET approved_severity = ?,
+            approved_corrective_action = ?,
+            approved_by = ?,
+            approved_ts = ?,
+            is_llm_correction_approved = 1
+        WHERE id = ?
+    """, (final_severity, notes, approver, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), record_id))
+    conn.commit()
+    conn.close()
+
+
+# --------------------------
+# Approval Dialog
+# --------------------------
 @st.dialog("Approve Record")
 def approval_dialog(record):
-    st.write(f"**Payload ID:** {record['Payload_ID']}")
-    st.write(f"**Environment:** {record['Environment']}")
+    st.write(f"**Payload ID:** {record['payload_id']}")
+    st.write(f"**Environment:** {record['environment']}")
     st.write(f"**Current Severity:** {record['Severity']}")
-    st.write(f"**Combined Score:** {record['Combined_Score']}")
+    st.write(f"**Combined Score:** {record['combined_score']}")
     st.write(f"**Corrective Action:** {record['Corrective_Action']}")
 
     st.divider()
@@ -34,49 +62,48 @@ def approval_dialog(record):
         "Final Severity",
         ["Critical", "High", "Medium", "Low"],
         index=["Critical", "High", "Medium", "Low"].index(record['Severity'])
+        if record['Severity'] in ["Critical", "High", "Medium", "Low"] else 2
     )
 
-    notes = st.text_area("Approver Notes", height=100)
+    notes = st.text_area("Approver Notes / Corrective Action", height=100)
 
     if st.button("Approve", type="primary"):
-        st.session_state.approved_ids.append(record['ID'])
-        st.session_state.approval_data.append({
-            'Payload_ID': record['Payload_ID'],
-            'Original_Severity': record['Severity'],
-            'Approved_Severity': final_severity,
-            'Notes': notes,
-            'Approved_By': st.session_state.get('username', 'admin'),
-            'Approved_At': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        })
-        st.success("Approved successfully")
+        approver = st.session_state.get('username', 'admin')
+        update_approval(record['id'], final_severity, notes, approver)
+        st.success("✅ Record approved and updated in database!")
         st.rerun()
 
-def show():
-    st.title("Admin Approvals")
 
-    if 'approved_ids' not in st.session_state:
-        st.session_state.approved_ids = []
-    if 'approval_data' not in st.session_state:
-        st.session_state.approval_data = []
+# --------------------------
+# Main UI
+# --------------------------
+def show():
+    st.title("🔐 Admin Approvals Dashboard")
 
     tab1, tab2 = st.tabs(["Pending", "Approved"])
 
+    # --------------------------
+    # Pending Tab
+    # --------------------------
     with tab1:
         df = get_pending_data()
-        df = df[~df['ID'].isin(st.session_state.approved_ids)]
+
+        if df.empty:
+            st.info("🎉 No pending approvals!")
+            return
 
         col1, col2, col3 = st.columns(3)
         col1.metric("Pending", len(df))
-        col2.metric("Critical", len(df[df['Severity']=='Critical']))
-        col3.metric("Avg Score", f"{df['Combined_Score'].mean():.2f}")
+        col2.metric("Critical", len(df[df['Severity'] == 'Critical']))
+        col3.metric("Avg Score", f"{df['combined_score'].mean():.2f}")
 
         col1, col2, col3 = st.columns(3)
-        env = col1.selectbox("Environment", ["All"] + df['Environment'].unique().tolist())
-        sev = col2.selectbox("Severity", ["All"] + df['Severity'].unique().tolist())
-        src = col3.selectbox("Source", ["All"] + df['Source'].unique().tolist())
+        env = col1.selectbox("Environment", ["All"] + df['environment'].dropna().unique().tolist())
+        sev = col2.selectbox("Severity", ["All"] + df['Severity'].dropna().unique().tolist())
+        src = col3.selectbox("Source", ["All"] + df['Source'].dropna().unique().tolist())
 
         if env != "All":
-            df = df[df['Environment'] == env]
+            df = df[df['environment'] == env]
         if sev != "All":
             df = df[df['Severity'] == sev]
         if src != "All":
@@ -87,27 +114,34 @@ def show():
             use_container_width=True,
             hide_index=True,
             column_config={
-                "Model_Score": st.column_config.NumberColumn(format="%.2f"),
-                "Rule_Score": st.column_config.NumberColumn(format="%.2f"),
-                "Combined_Score": st.column_config.NumberColumn(format="%.2f")
+                "bert_score": st.column_config.NumberColumn("BERT Score", format="%.2f"),
+                "rule_score": st.column_config.NumberColumn("Rule Score", format="%.2f"),
+                "combined_score": st.column_config.NumberColumn("Combined Score", format="%.2f")
             }
         )
 
-        record_id = st.number_input("Enter ID to approve", min_value=1, max_value=15, step=1)
+        record_id = st.number_input("Enter ID to approve", min_value=1, step=1)
 
-        if st.button("Approve", type="primary"):
-            record = df[df['ID'] == record_id]
+        if st.button("Approve Record", type="primary"):
+            record = df[df['id'] == record_id]
             if not record.empty:
                 approval_dialog(record.iloc[0])
             else:
                 st.error("Record not found in pending list")
 
+    # --------------------------
+    # Approved Tab
+    # --------------------------
     with tab2:
-        if st.session_state.approval_data:
-            approved_df = pd.DataFrame(st.session_state.approval_data)
+        approved_df = get_approved_data()
+        if not approved_df.empty:
             st.dataframe(approved_df, use_container_width=True, hide_index=True)
-
             csv = approved_df.to_csv(index=False).encode('utf-8')
-            st.download_button("Export CSV", csv, "approved.csv", "text/csv")
+            st.download_button("📥 Export Approved Data", csv, "approved_records.csv", "text/csv")
         else:
-            st.info("No approved records")
+            st.info("No approved records yet.")
+
+
+# Run the app
+if __name__ == "__main__":
+    show()
