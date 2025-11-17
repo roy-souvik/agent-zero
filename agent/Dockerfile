@@ -8,8 +8,9 @@ RUN apt-get update && apt-get install -y \
     libsqlite3-dev \
     curl \
     portaudio19-dev \
-    python3-pyaudio \
     espeak \
+    espeak-ng-data \
+    libespeak-ng1 \
     alsa-utils \
     && rm -rf /var/lib/apt/lists/*
 

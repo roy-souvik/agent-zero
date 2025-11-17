@@ -16,5 +16,6 @@ crewai>=0.7.0
 
 # Voice Agent (local only)
 SpeechRecognition
-pyttsx3
-pyaudio
+gtts
+pydub
+ffmpeg
