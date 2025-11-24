@@ -1,6 +1,6 @@
 import streamlit as st
 from dotenv import load_dotenv
-from pages import rag_qa, chat_agent, settings
+from pages import rag_qa, chat_agent, settings, deepagent_ui
 
 load_dotenv()
 
@@ -15,7 +15,7 @@ st.set_page_config(
 st.sidebar.title("🧭 Navigation")
 page = st.sidebar.radio(
     "Go to",
-    ["RAG Q&A", "Chat Agent", "Settings"]
+    ["RAG Q&A", "Chat Agent", "Deepagent", "Settings"]
 )
 
 st.sidebar.divider()
@@ -26,5 +26,7 @@ if page == "RAG Q&A":
     rag_qa.show()
 elif page == "Chat Agent":
     chat_agent.show()
+elif page == "Deepagent":
+    deepagent_ui.show()
 elif page == "Settings":
     settings.show()

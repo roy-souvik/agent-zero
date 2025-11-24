@@ -42,10 +42,13 @@ services:
     command: >
       bash -c "
         pip install --no-cache-dir -r requirements.txt &&
-        uvicorn api:app --host 0.0.0.0 --port 8001 &
+        uvicorn deepagent:app --host 0.0.0.0 --port 8001 --reload &
+        sleep 5 &&
         streamlit run app.py --server.port 8501
       "
     restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
 
 volumes:
   ollama_data:
