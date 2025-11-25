@@ -20,7 +20,6 @@ MODEL_NAME = os.getenv("OLLAMA_MODEL", "llama2")
 
 llm = ChatOllama(model=MODEL_NAME, base_url=OLLAMA_HOST, temperature=0)
 checkpointer = MemorySaver()
-
 # ============================================================================
 # TOOLS
 # ============================================================================
@@ -124,7 +123,9 @@ def execute_task(request: TaskRequest):
             config={"configurable": {"thread_id": thread_id}},
         )
 
-        response = result["messages"][-1]["content"] if result.get("messages") else "No response"
+        # Extract content from AIMessage object
+        last_msg = result.get("messages", [])[-1] if result.get("messages") else None
+        response = last_msg.content if last_msg and hasattr(last_msg, 'content') else str(last_msg)
         todos = result.get("todos", [])
 
         return TaskResponse(
@@ -149,7 +150,7 @@ def stream_task(request: TaskRequest):
             ):
                 if "messages" in event:
                     msg = event["messages"][-1]
-                    content = msg.get("content", "")
+                    content = msg.content if hasattr(msg, 'content') else str(msg)
                     if content:
                         yield f"data: {{'content': '{content}', 'thread_id': '{thread_id}'}}\n\n"
         except Exception as e:
