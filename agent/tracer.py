@@ -1,3 +1,8 @@
+import json
+from datetime import datetime
+import threading
+from collections import defaultdict
+
 class InMemoryTracer:
     """Simple in-memory tracer for observability without external dependencies"""
 
@@ -34,19 +39,35 @@ class InMemoryTracer:
             return result[-limit:]
 
     def get_stats(self):
-        """Get statistics about traces"""
+        """Get statistics about traces including token usage"""
         with self.lock:
             if not self.traces:
                 return {}
 
-            stats = defaultdict(lambda: {"count": 0, "total_duration": 0, "errors": 0})
+            stats = defaultdict(lambda: {
+                "count": 0,
+                "total_duration": 0,
+                "errors": 0,
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "total_tokens": 0
+            })
 
             for trace in self.traces:
                 op = trace["operation"]
                 stats[op]["count"] += 1
                 stats[op]["total_duration"] += trace["duration_ms"]
+
                 if trace["status"] == "error":
                     stats[op]["errors"] += 1
+
+                # Aggregate token usage
+                if "input_tokens" in trace["output"]:
+                    stats[op]["input_tokens"] += trace["output"].get("input_tokens", 0)
+                if "output_tokens" in trace["output"]:
+                    stats[op]["output_tokens"] += trace["output"].get("output_tokens", 0)
+                if "total_tokens" in trace["output"]:
+                    stats[op]["total_tokens"] += trace["output"].get("total_tokens", 0)
 
             # Calculate averages
             for op in stats:

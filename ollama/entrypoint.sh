@@ -11,9 +11,9 @@ until curl -s http://localhost:11434/; do
 done
 
 # Pull the model
-# ollama pull llama3.1
+ollama pull llama3.1
 # ollama pull qwen3:1.7b
-ollama pull deepseek-r1:latest
+# ollama pull deepseek-r1:latest
 
 # Wait for background server to exit (keep container running)
 wait

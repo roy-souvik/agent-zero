@@ -1,13 +1,12 @@
 import os
 import json
-from datetime import datetime
+import tiktoken
 from dotenv import load_dotenv
 from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain_chroma import Chroma
 import chromadb
-from collections import defaultdict
-import threading
-from tracer import InMemoryTracer
+from tracing import trace_operation
+from tracer_instance import tracer
 
 # Load environment variables
 load_dotenv()
@@ -17,60 +16,6 @@ OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1:latest")
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434")
 CHROMA_HOST = os.getenv("CHROMA_HOST", "chroma")
 CHROMA_PORT = int(os.getenv("CHROMA_PORT", 8000))
-
-# ==================== In-Memory Tracing System ====================
-
-# Global tracer instance
-tracer = InMemoryTracer()
-
-
-def trace_operation(operation_name: str):
-    """Decorator to automatically trace function calls"""
-    def decorator(func):
-        def wrapper(*args, **kwargs):
-            import time
-            start = time.time()
-
-            # Prepare input data (limit size for memory)
-            input_data = {
-                "args": str(args)[:200],
-                "kwargs": str(kwargs)[:200]
-            }
-
-            try:
-                result = func(*args, **kwargs)
-                duration_ms = (time.time() - start) * 1000
-
-                # Prepare output data
-                output_data = {
-                    "result": str(result)[:500] if result else None
-                }
-
-                tracer.add_trace(
-                    operation=operation_name,
-                    input_data=input_data,
-                    output_data=output_data,
-                    duration_ms=duration_ms,
-                    status="success"
-                )
-
-                return result
-
-            except Exception as e:
-                duration_ms = (time.time() - start) * 1000
-                tracer.add_trace(
-                    operation=operation_name,
-                    input_data=input_data,
-                    output_data={},
-                    duration_ms=duration_ms,
-                    status="error",
-                    error=str(e)
-                )
-                raise
-
-        return wrapper
-    return decorator
-
 
 # ==================== RAG Pipeline ====================
 
@@ -124,6 +69,19 @@ Answer:"""
     # Generate response
     response = llm.invoke(prompt.strip())
 
+    encoding_token = tiktoken.get_encoding("cl100k_base")
+    input_tokens = len(encoding_token.encode(prompt))
+    output_tokens = len(encoding_token.encode(response.content))
+
+    # Store in tracer
+    tracer.add_trace(
+        operation="query_rag_tokens",
+        input_data={"input_tokens": input_tokens},
+        output_data={"output_tokens": output_tokens, "total_tokens": input_tokens + output_tokens},
+        duration_ms=0,
+        status="success"
+    )
+
     return response.content
 
 
@@ -133,21 +91,3 @@ def semantic_search(query: str, k: int = 3):
     db = init_vector_store()
     results = db.similarity_search(query, k=k)
     return results
-
-
-# ==================== Observability Endpoints ====================
-
-def get_traces_api(operation: str = None, limit: int = 100):
-    """Get traces for API endpoint"""
-    return tracer.get_traces(operation=operation, limit=limit)
-
-
-def get_stats_api():
-    """Get statistics for API endpoint"""
-    return tracer.get_stats()
-
-
-def export_traces_api(filepath: str = "traces.json"):
-    """Export traces to JSON file"""
-    tracer.export_json(filepath)
-    return {"status": "Traces exported to " + filepath}

@@ -1,10 +1,8 @@
 from fastapi import FastAPI, Query, Request
 from pydantic import BaseModel
 from fastapi.responses import HTMLResponse, JSONResponse
-from rag_pipeline import (
-    query_rag, add_document, semantic_search,
-    get_traces_api, get_stats_api, export_traces_api
-)
+from rag_pipeline import (query_rag, add_document, semantic_search)
+from tracing import (get_traces_api, get_stats_api, export_traces_api)
 
 app = FastAPI()
 
@@ -116,6 +114,12 @@ async def dashboard():
             th { background: #0f172a; color: #38bdf8; text-align: left; padding: 12px; border-bottom: 1px solid #334155; font-size: 12px; }
             td { padding: 12px; border-bottom: 1px solid #334155; font-size: 13px; }
             tr:hover { background: #0f172a; }
+            .expand-btn { background: none; border: none; color: #38bdf8; cursor: pointer; font-size: 16px; padding: 0; }
+            .expand-btn:hover { color: #0ea5e9; }
+            .details-row { display: none; }
+            .details-row.active { display: table-row; }
+            .details-content { background: #0f172a; padding: 15px; border-radius: 4px; font-family: monospace; font-size: 12px; color: #94a3b8; }
+            .details-content pre { margin: 0; white-space: pre-wrap; word-wrap: break-word; }
             .success { color: #10b981; }
             .error { color: #ef4444; }
             .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
@@ -151,11 +155,11 @@ async def dashboard():
                     <table>
                         <thead>
                             <tr>
+                                <th style="width: 30px;"></th>
                                 <th>Timestamp</th>
                                 <th>Operation</th>
                                 <th>Duration (ms)</th>
                                 <th>Status</th>
-                                <th>Details</th>
                             </tr>
                         </thead>
                         <tbody id="tracesTable">
@@ -197,6 +201,9 @@ async def dashboard():
                             <h3>${op}</h3>
                             <p>Calls: <span class="value">${stats.count}</span></p>
                             <p>Avg Duration: <span class="value">${stats.avg_duration?.toFixed(2)}</span><span class="unit">ms</span></p>
+                            <p>Input Tokens: <span class="value">${stats.input_tokens || 0}</span></p>
+                            <p>Output Tokens: <span class="value">${stats.output_tokens || 0}</span></p>
+                            <p>Total Tokens: <span class="value">${stats.total_tokens || 0}</span></p>
                             <p>Errors: <span class="value" style="color: ${stats.errors > 0 ? '#ef4444' : '#10b981'}">${stats.errors}</span></p>
                         </div>
                     `;
@@ -211,18 +218,45 @@ async def dashboard():
                 const traces = await res.json();
 
                 let html = '';
-                traces.forEach(trace => {
+                traces.forEach((trace, index) => {
+                    const inputTokens = trace.input?.input_tokens || trace.output?.input_tokens || '-';
+                    const outputTokens = trace.input?.output_tokens || trace.output?.output_tokens || '-';
+                    const totalTokens = trace.input?.total_tokens || trace.output?.total_tokens || '-';
+
+                    let details = '';
+                    if (trace.error) {
+                        details = `Error: ${trace.error}`;
+                    } else if (inputTokens !== '-') {
+                        details = `In: ${inputTokens} | Out: ${outputTokens} | Total: ${totalTokens}`;
+                    } else {
+                        details = 'OK';
+                    }
+
                     html += `
-                        <tr>
+                        <tr onclick="toggleDetails(${index})">
+                            <td><button class="expand-btn" onclick="event.stopPropagation(); toggleDetails(${index})">▶</button></td>
                             <td>${new Date(trace.timestamp).toLocaleTimeString()}</td>
                             <td>${trace.operation}</td>
                             <td>${trace.duration_ms.toFixed(2)}</td>
                             <td><span class="${trace.status === 'success' ? 'success' : 'error'}">${trace.status}</span></td>
-                            <td>${trace.error ? trace.error : 'OK'}</td>
+                        </tr>
+                        <tr class="details-row" id="details-${index}">
+                            <td colspan="5">
+                                <div class="details-content">
+                                    <strong>Input:</strong><pre>${JSON.stringify(trace.input, null, 2)}</pre>
+                                    <strong>Output:</strong><pre>${JSON.stringify(trace.output, null, 2)}</pre>
+                                    ${trace.error ? `<strong>Error:</strong><pre>${trace.error}</pre>` : ''}
+                                </div>
+                            </td>
                         </tr>
                     `;
                 });
                 document.getElementById('tracesTable').innerHTML = html || '<tr><td colspan="5">No traces</td></tr>';
+            }
+
+            function toggleDetails(index) {
+                const row = document.getElementById(`details-${index}`);
+                row?.classList.toggle('active');
             }
 
             async function exportTraces() {
@@ -249,8 +283,3 @@ async def dashboard():
     </body>
     </html>
     """
-
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001)
