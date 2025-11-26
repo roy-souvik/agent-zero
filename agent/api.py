@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request
 from pydantic import BaseModel
-from rag_pipeline import add_document, query_rag
+# from rag_pipeline import add_document, query_rag
 
 app = FastAPI()
 
@@ -21,7 +21,7 @@ async def add_doc(request: Request):
         text = data.get("text")
         if not text:
             return {"error": "Missing 'text' field"}
-        return add_document(text)
+        return text
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -34,7 +34,7 @@ async def query_doc(request: Request):
         question = data.get("question")
         if not question:
             return {"error": "Missing 'question' field"}
-        return {"answer": query_rag(question)}
+        return {"answer": question}
     except Exception as e:
         import traceback
         traceback.print_exc()

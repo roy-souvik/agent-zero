@@ -12,5 +12,8 @@ fastapi>=0.100
 uvicorn>=0.24
 requests>=2.31
 pydantic>=2.5
-crewai>=0.7.0
 requests>=2.32
+scikit-learn
+pandas
+plotly
+numpy
