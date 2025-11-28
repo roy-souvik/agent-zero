@@ -6,12 +6,9 @@ langchain-community
 langchain-core
 langchain-ollama
 langgraph
-langsmith
 streamlit
 fastapi>=0.100
 uvicorn>=0.24
-acp-sdk>=0.8.0
 requests>=2.31
 pydantic>=2.5
-crewai>=0.7.0
 requests>=2.32
