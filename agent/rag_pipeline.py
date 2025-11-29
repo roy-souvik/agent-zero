@@ -63,7 +63,6 @@ def query_rag(question: str):
 def query_llm(question: str):
     """Query LLM for reqular Q/A."""
 
-    context = "\n".join([d.page_content for d in docs])
     prompt = f"""You are a helpful AI assistant.
     Answer the question accurately.
 
