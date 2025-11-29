@@ -48,13 +48,28 @@ def query_rag(question: str):
 
     context = "\n".join([d.page_content for d in docs])
     prompt = f"""You are a helpful AI assistant.
-Use the context below to answer the question accurately.
+    Use the context below to answer the question accurately.
 
-Context:
-{context}
+    Context:
+    {context}
 
-Question: {question}
-Answer:"""
+    Question: {question}
+    Answer:"""
 
     response = llm.invoke(prompt)
+
+    return response.content
+
+def query_llm(question: str):
+    """Query LLM for reqular Q/A."""
+
+    context = "\n".join([d.page_content for d in docs])
+    prompt = f"""You are a helpful AI assistant.
+    Answer the question accurately.
+
+    Question: {question}
+    Answer:"""
+
+    response = llm.invoke(prompt)
+
     return response.content
